@@ -190,6 +190,7 @@ export async function connectMcpClient({
 export async function getAuthHeaders(
 	ctx: Pick<IExecuteFunctions, 'getCredentials'>,
 	authentication: McpAuthenticationOption,
+	customAuthentication?: string,
 ): Promise<{ headers?: Record<string, string> }> {
 	switch (authentication) {
 		case 'headerAuth': {
@@ -209,6 +210,22 @@ export async function getAuthHeaders(
 			if (!result) return {};
 
 			return { headers: { Authorization: `Bearer ${result.token}` } };
+		}
+		case 'custom': {
+			if (!customAuthentication?.trim()) {
+				return {};
+			}
+
+			try {
+				const headers = JSON.parse(customAuthentication) as Record<string, string>;
+				if (typeof headers === 'object' && headers !== null) {
+					return { headers };
+				}
+			} catch (error) {
+				console.warn('Failed to parse custom authentication JSON:', error);
+			}
+
+			return {};
 		}
 		case 'none':
 		default: {

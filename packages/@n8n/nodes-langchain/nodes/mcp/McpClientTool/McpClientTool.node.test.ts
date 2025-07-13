@@ -284,5 +284,41 @@ describe('McpClientTool', () => {
 				headers: { Accept: 'text/event-stream', Authorization: 'Bearer my-token' },
 			});
 		});
+
+		it('should support custom authentication', async () => {
+			jest.spyOn(Client.prototype, 'connect').mockResolvedValue();
+			jest.spyOn(Client.prototype, 'listTools').mockResolvedValue({
+				tools: [
+					{
+						name: 'MyTool1',
+						description: 'MyTool1 does something',
+						inputSchema: { type: 'object', properties: { input: { type: 'string' } } },
+					},
+				],
+			});
+
+			const supplyDataResult = await new McpClientTool().supplyData.call(
+				mock<ISupplyDataFunctions>({
+					getNode: jest.fn(() => mock<INode>({ typeVersion: 1 })),
+					getNodeParameter: jest.fn((key, _index) => {
+						const parameters: Record<string, any> = {
+							include: 'except',
+							excludeTools: ['MyTool2'],
+							authentication: 'custom',
+							sseEndpoint: 'https://my-mcp-endpoint.ai/sse',
+							customAuthentication:
+								'{"Authorization": "Bearer {{$json.token}}", "X-Custom-Header": "{{$json.customValue}}"}',
+						};
+						return parameters[key];
+					}),
+					logger: { debug: jest.fn(), error: jest.fn() },
+					addInputData: jest.fn(() => ({ index: 0 })),
+				}),
+				0,
+			);
+
+			expect(supplyDataResult.closeFunction).toBeInstanceOf(Function);
+			expect(supplyDataResult.response).toBeInstanceOf(McpToolkit);
+		});
 	});
 });

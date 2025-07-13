@@ -98,12 +98,31 @@ export class McpClientTool implements INodeType {
 						value: 'headerAuth',
 					},
 					{
+						name: 'Custom',
+						value: 'custom',
+					},
+					{
 						name: 'None',
 						value: 'none',
 					},
 				],
 				default: 'none',
 				description: 'The way to authenticate with your SSE endpoint',
+			},
+			{
+				displayName: 'Custom Authentication',
+				name: 'customAuthentication',
+				type: 'string',
+				default: '',
+				description:
+					'JSON object with custom headers. Use expressions to get data from previous nodes.',
+				placeholder:
+					'{"Authorization": "Bearer {{$json.token}}", "X-Custom-Header": "{{$json.customValue}}"}',
+				displayOptions: {
+					show: {
+						authentication: ['custom'],
+					},
+				},
 			},
 			{
 				displayName: 'Credentials',
@@ -188,8 +207,13 @@ export class McpClientTool implements INodeType {
 			itemIndex,
 		) as McpAuthenticationOption;
 		const sseEndpoint = this.getNodeParameter('sseEndpoint', itemIndex) as string;
+		const customAuthentication = this.getNodeParameter(
+			'customAuthentication',
+			itemIndex,
+			'',
+		) as string;
 		const node = this.getNode();
-		const { headers } = await getAuthHeaders(this, authentication);
+		const { headers } = await getAuthHeaders(this, authentication, customAuthentication);
 		const client = await connectMcpClient({
 			sseEndpoint,
 			headers,
